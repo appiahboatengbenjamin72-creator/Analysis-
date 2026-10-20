@@ -38,7 +38,7 @@ function drawChart(data){
  const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#0c1626";ctx.fillRect(0,0,w,h);
  // Reverse time direction as requested: newest candle left, older candles to the right.
- const rows=(data||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)).slice(-36).reverse();
+ const rows=(data||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)).map(c=>({...c,high:Math.max(c.open,c.close,c.high,c.low),low:Math.min(c.open,c.close,c.high,c.low)})).slice(-36).reverse();
  if(rows.length<2){ctx.fillStyle="#a4b3ca";ctx.font="13px system-ui";ctx.textAlign="left";ctx.fillText("Waiting for valid market candles…",14,25);return;}
  const left=72,right=12,top=16,bottom=32,volH= Math.min(38,Math.max(24,h*.12)),gap=8;
  const plotW=Math.max(1,w-left-right),plotH=Math.max(1,h-top-bottom-volH-gap),volTop=top+plotH+gap;
