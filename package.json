@@ -1,0 +1,16 @@
+{
+  "name": "trade-analyzer-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper build for the Trade Analyzer web app",
+  "scripts": {
+    "prepare:mobile": "mkdir -p www && cp index.html manifest.json service-worker.js www/"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
