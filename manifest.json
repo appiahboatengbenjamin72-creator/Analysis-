@@ -1,7 +1,7 @@
 {
   "name": "Trade Analyzer",
   "short_name": "Trade Analyzer",
-  "description": "Mobile-friendly candle analysis, expiry timer, and demo journal.",
+  "description": "Live Forex and crypto analysis, five-minute expiry tracker, and manual trade journal.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
