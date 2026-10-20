@@ -47,7 +47,7 @@ function analyze(data){
 }
 function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No confirmation":score+"% rule score";$("meterFill").style.width=score+"%";$("reason").textContent=why}
 async function loadMarket(){
- sampleMode=false;const symbol=$("symbol").value,interval=$("timeframe").value;
+ sampleMode=false;const symbol=$("symbol").value,interval=$("timeframe").value;$("chartMarketLabel").textContent=$("symbol").selectedOptions[0].textContent;$("forexChartLink").href="https://www.tradingview.com/chart/?symbol="+encodeURIComponent(symbol.startsWith("FX:")?symbol:"BINANCE:"+symbol);if(symbol.startsWith("FX:")){currentPrice=null;candles=[];drawChart([]);$("price").textContent="Forex chart";$("priceChange").textContent="Open detailed Forex chart below";$("chartNote").textContent="This app has no direct forex candle feed. Use the TradingView link below for the selected pair.";$("buyVol").textContent="—";$("sellVol").textContent="—";$("pressure").textContent="—";setSignal("WAIT",0,"Forex signal calculations are paused until a forex candle data feed is connected.");setConnection(true,"Forex chart mode");$("feedNote").textContent="Forex chart viewing is available through TradingView. No broker connection or automated trading.";return;}
  $("refresh").disabled=true;$("feedNote").textContent="Loading public market data…";
  try{
   const u="https://api.binance.com/api/v3/klines?symbol="+encodeURIComponent(symbol)+"&interval="+encodeURIComponent(interval)+"&limit=30";
