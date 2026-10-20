@@ -52,18 +52,35 @@ function drawChart(data){
 }
 
 function analyze(data){
- candles=data||[];drawChart(candles);const view=candles.slice(-5);$("candles").innerHTML=view.map(c=>'<div class="candle '+(c.close>=c.open?'up':'down')+'">'+(c.close>=c.open?'▲':'▼')+'<br>'+fmt(c.close)+'</div>').join('')+Array(Math.max(0,5-view.length)).fill('<div class="candle">—</div>').join('');
- if(candles.length<5){setSignal("WAIT",0,"Not enough closed candles to confirm a setup.");return}
- const a=candles.slice(-5),last=a[4],prior=a[3],emaShort=a.slice(-3).reduce((s,c)=>s+c.close,0)/3,emaLong=a.reduce((s,c)=>s+c.close,0)/5;
- const green=a.filter(c=>c.close>c.open).length,red=a.filter(c=>c.close<c.open).length;
+ candles=data||[];drawChart(candles);
+ const view=candles.slice(-5);
+ $("candles").innerHTML=view.map(c=>'<div class="candle '+(c.close>=c.open?'up':'down')+'">'+(c.close>=c.open?'▲':'▼')+'<br>'+fmt(c.close)+'</div>').join('')+Array(Math.max(0,5-view.length)).fill('<div class="candle">—</div>').join('');
+ const valid=candles.filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low);
+ if(sampleMode){setSignal("WAIT",0,"Sample data only. Refresh live market data before using any signal.");return}
+ if(valid.length<20){setSignal("WAIT",0,"Need at least 20 valid closed candles for trend and momentum checks.");return}
+ const closes=valid.map(c=>c.close),last=valid[valid.length-1],prior=valid[valid.length-2];
+ const mean=(arr)=>arr.reduce((sum,v)=>sum+v,0)/arr.length;
+ const ema=(values,period)=>{const k=2/(period+1);let out=values[0];for(let i=1;i<values.length;i++)out=values[i]*k+out*(1-k);return out};
+ const shortEma=ema(closes.slice(-Math.min(30,closes.length)),5),longEma=ema(closes.slice(-Math.min(60,closes.length)),13);
+ const recent=valid.slice(-5),ranges=recent.map(c=>c.high-c.low),avgRange=mean(ranges.slice(0,4));
  const body=Math.abs(last.close-last.open),range=Math.max(last.high-last.low,1e-12),bodyRatio=body/range;
+ const previousBody=Math.abs(prior.close-prior.open),previousRange=Math.max(prior.high-prior.low,1e-12),previousBodyRatio=previousBody/previousRange;
+ const momentum=last.close-closes[valid.length-4],momentumPct=momentum/Math.max(Math.abs(closes[valid.length-4]),1e-12);
+ const recentUp=valid.slice(-4).filter(c=>c.close>c.open).length,recentDown=valid.slice(-4).filter(c=>c.close<c.open).length;
+ const giantCandle=avgRange>0&&range>avgRange*2.2;
  let dir="WAIT",score=0,why=[];
- if(last.close>last.open&&prior.close>prior.open&&emaShort>emaLong){dir="CALL";score=55+Math.min(30,green*5);why.push("upward momentum")}
- else if(last.close<last.open&&prior.close<prior.open&&emaShort<emaLong){dir="PUT";score=55+Math.min(30,red*5);why.push("downward momentum")}
- if(dir!=="WAIT"&&bodyRatio<.25){dir="WAIT";score=30;why=["weak confirmation candle"]}
- else if(dir!=="WAIT")why.push("last candle closed in the trend direction");
- else why.push("trend or candle confirmation is mixed");
- setSignal(dir,Math.min(85,score),why.join("; ")+".");
+ if(giantCandle){why.push("last candle is unusually large; avoid chasing the move");}
+ else if(bodyRatio<0.35){why.push("confirmation candle has a small body");}
+ else if(previousBodyRatio<0.2){why.push("previous candle shows indecision");}
+ else {
+  const bullish=shortEma>longEma&&last.close>shortEma&&prior.close>prior.open&&last.close>last.open&&momentumPct>0&&recentUp>=3;
+  const bearish=shortEma<longEma&&last.close<shortEma&&prior.close<prior.open&&last.close<last.open&&momentumPct<0&&recentDown>=3;
+  if(bullish){dir="CALL";why.push("short trend is above long trend","momentum and two closed candles agree","3 or more of the last 4 candles rose");score=60+(bodyRatio>=0.6?8:0)+(recentUp===4?5:0)+(momentumPct>0.001?3:0);}
+  else if(bearish){dir="PUT";why.push("short trend is below long trend","momentum and two closed candles agree","3 or more of the last 4 candles fell");score=60+(bodyRatio>=0.6?8:0)+(recentDown===4?5:0)+(momentumPct< -0.001?3:0);}
+  else why.push("trend, momentum, and candle confirmation do not all agree");
+ }
+ if(dir==="WAIT"){score=0;setSignal(dir,score,why.join("; ")+". Wait for a clearer setup.");return}
+ setSignal(dir,Math.min(76,score),why.join("; ")+". Rule-based setup score, not a probability of winning.");
 }
 function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No confirmation":score+"% rule score";$("meterFill").style.width=score+"%";$("reason").textContent=why}
 async function loadMarket(){
