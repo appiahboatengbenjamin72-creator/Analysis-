@@ -70,7 +70,7 @@ $("resetTimer").addEventListener("click",()=>{if(timerInterval)clearInterval(tim
 $("recordEntry").addEventListener("click",()=>{if(!Number.isFinite(currentPrice)){alert("Load live or sample market data first.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
 $("settle").addEventListener("click",()=>{if(!activeEntry||!Number.isFinite(currentPrice))return;activeEntry.exit=currentPrice;const diff=currentPrice-activeEntry.entry;activeEntry.result=(activeEntry.direction==="CALL"?diff>0:diff<0)?"WIN":diff===0?"TIE":"LOSS";activeEntry=null;$("settle").disabled=true;$("timerState").textContent="Settled";renderJournal()});
 $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journal entries?")){journal=[];activeEntry=null;$("settle").disabled=true;renderJournal()}});
-window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();
+window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},15000);
 })(); 
 </script>
 </body>
