@@ -1,4 +1,4 @@
-const CACHE = "trade-analyzer-v11";
+const CACHE = "trade-analyzer-v12";
 const ASSETS = ["./", "./index.html", "./manifest.json"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
