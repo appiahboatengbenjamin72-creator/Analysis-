@@ -38,7 +38,7 @@ function drawChart(data){
  const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#0c1626";ctx.fillRect(0,0,w,h);
  // Standard candlestick chart orientation: oldest candle left, newest candle right; prices rise upward.
- const rows=(data||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)).map(c=>({...c,high:Math.max(c.open,c.close,c.high,c.low),low:Math.min(c.open,c.close,c.high,c.low)})).slice(-36);
+ const rows=(data||[]).map((c,index)=>({...c,_chartIndex:index})).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)).map(c=>({...c,high:Math.max(c.open,c.close,c.high,c.low),low:Math.min(c.open,c.close,c.high,c.low)})).sort((a,b)=>{const ta=Number(a.time),tb=Number(b.time);return Number.isFinite(ta)&&Number.isFinite(tb)&&ta!==tb?ta-tb:a._chartIndex-b._chartIndex;}).slice(-36);
  if(rows.length<2){ctx.fillStyle="#a4b3ca";ctx.font="13px system-ui";ctx.textAlign="left";ctx.fillText("Waiting for valid market candles…",14,25);return;}
  const left=72,right=12,top=16,bottom=32,volH= Math.min(38,Math.max(24,h*.12)),gap=8;
  const plotW=Math.max(1,w-left-right),plotH=Math.max(1,h-top-bottom-volH-gap),volTop=top+plotH+gap;
@@ -244,7 +244,7 @@ async function loadMarket(){
    $("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="MT5";
    setConnection(true,"MT5 bridge connected");
    $("feedNote").textContent="Market data received from your configured MT5 bridge. Confirm broker, symbol suffix, quote freshness and candle timeframe match your trading platform.";
-   $("chartNote").textContent="Candles supplied by the MT5 bridge; newest candle appears on the left. Volume and buyer/seller counts are not inferred from MT5 candles.";
+   $("chartNote").textContent="Candles supplied by the MT5 bridge; oldest candle appears on the left and newest on the right, ordered by timestamp. Higher prices are at the top. Volume and buyer/seller counts are not inferred from MT5 candles.";
    $("mt5Help").textContent="Endpoint responded for "+pair+" · "+interval+". This confirms the endpoint responded, not that its data is broker-verified.";
    analyze(candles);
   }else if(isForex){
@@ -266,7 +266,7 @@ async function loadMarket(){
    $("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="FX";
    setConnection(true,tick&&tick.stale?"Forex data may be stale":"Live public Forex feed");
    $("feedNote").textContent="Forex candles and quote from a public market-data feed. Quotes may differ from Pocket Option prices; check freshness before acting.";
-   $("chartNote").textContent="Candlesticks run newest-to-oldest from left to right. Green candles closed up; red candles closed down. Volume bars appear below when the feed provides volume.";
+   $("chartNote").textContent="Candlesticks run oldest-to-newest from left to right, with higher prices at the top. Green candles closed up; red candles closed down. Volume bars appear below when the feed provides volume.";
    analyze(candles);
   }else{
    $("cryptoChartWrap").style.display="block";$("forexEmbed").style.display="none";$("forexEmbed").removeAttribute("src");
@@ -281,7 +281,7 @@ async function loadMarket(){
    $("buyVol").textContent=fmtVol(buy);$("sellVol").textContent=fmtVol(sell);$("pressure").textContent=Number.isFinite(buy)?(buy>sell?"Buyers":"Sellers"):"Unavailable";
    setConnection(true,"Live public crypto feed");
    $("feedNote").textContent="Live public Binance spot candles. Prices may differ from the broker's quote and execution price.";
-   $("chartNote").textContent="Reversed Binance spot candlesticks: newest candles on the left, older candles on the right. The currently forming candle is excluded from signal confirmation.";
+   $("chartNote").textContent="Binance spot candlesticks run oldest-to-newest from left to right, with higher prices at the top. The currently forming candle is excluded from signal confirmation.";
    analyze(candles);
   }
  }catch(e){
