@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
-<meta name="description" content="Trade Analyzer with market context, candle confirmation, five-minute expiry tracking, and demo results.">
+<meta name="description" content="Live Forex and crypto market analysis with manual trade tracking.">
 <link rel="manifest" href="./manifest.json">
 <title>Trade Analyzer</title>
 <style>
@@ -92,6 +92,7 @@ async function loadMarket(){
    analyze(candles);
   }
  }catch(e){
+  currentPrice=null;candles=[];drawChart(candles);$("price").textContent="—";$("priceChange").textContent="No fresh market data";
   setConnection(false,"Feed unavailable");
   $("feedNote").textContent="Could not load live "+(isForex?"Forex":"crypto")+" data: "+e.message+". Retry when the feed is available. Sample data is not live.";
   if(isForex){$("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="N/A";setSignal("WAIT",0,"Live Forex candle data unavailable. No signal until fresh candles load.");}
@@ -102,7 +103,7 @@ function renderJournal(){const settled=journal.filter(x=>x.result==="WIN"||x.res
 $("refresh").addEventListener("click",loadMarket);$("symbol").addEventListener("change",loadMarket);$("timeframe").addEventListener("change",loadMarket);$("demoMode").addEventListener("click",sampleData);
 $("startTimer").addEventListener("click",()=>{if(timerInterval)clearInterval(timerInterval);timerEnd=Date.now()+300000;$("timerState").textContent="Running";$("startTimer").disabled=true;timerInterval=setInterval(()=>{const left=Math.max(0,timerEnd-Date.now()),sec=Math.ceil(left/1000);$("countdown").textContent=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");$("timerProgress").style.width=((300000-left)/300000*100)+"%";if(left<=0){clearInterval(timerInterval);timerInterval=null;$("timerState").textContent="Expired";$("startTimer").disabled=false;if(activeEntry){$("settle").disabled=false;$("timerState").textContent="Expiry reached — settle demo"} }},250)});
 $("resetTimer").addEventListener("click",()=>{if(timerInterval)clearInterval(timerInterval);timerInterval=null;timerEnd=0;$("countdown").textContent="05:00";$("timerProgress").style.width="0%";$("timerState").textContent="Ready";$("startTimer").disabled=false});
-$("recordEntry").addEventListener("click",()=>{if(!Number.isFinite(currentPrice)){alert("Load live market data first. Sample data is not suitable for recording a real-market entry.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
+$("recordEntry").addEventListener("click",()=>{if(sampleMode){alert("Sample data is not live. Refresh the market before recording a manual entry.");return}if(!Number.isFinite(currentPrice)){alert("Load fresh live market data first.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
 $("settle").addEventListener("click",()=>{if(!activeEntry||!Number.isFinite(currentPrice))return;activeEntry.exit=currentPrice;const diff=currentPrice-activeEntry.entry;activeEntry.result=(activeEntry.direction==="CALL"?diff>0:diff<0)?"WIN":diff===0?"TIE":"LOSS";activeEntry=null;$("settle").disabled=true;$("timerState").textContent="Settled";renderJournal()});
 $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journal entries?")){journal=[];activeEntry=null;$("settle").disabled=true;renderJournal()}});
 window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},15000);
