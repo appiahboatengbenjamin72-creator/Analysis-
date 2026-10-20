@@ -195,7 +195,22 @@ function analyze(data){
  $("proChecklist").textContent="S/R filter: "+(supportLevel!==null?"Support "+fmt(supportLevel):"support unavailable")+" · "+(resistanceLevel!==null?"Resistance "+fmt(resistanceLevel):"resistance unavailable")+" · "+(bullishSupportBounce?"bullish rejection at support":bearishResistanceReject?"bearish rejection at resistance":nearSupport?"near support — avoid PUT":nearResistance?"near resistance — avoid CALL":"price between levels")+" · Confluence: bullish "+bull+"/5, bearish "+bear+"/5 · ADX "+adx.toFixed(1)+" · No score is a win probability.";
  setSignal(dir,score,why.join("; ")+". This is a conservative rule-based filter, not a guarantee.");
 }
-function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("signalUpdated").textContent=(sampleMode?"Sample only · ":"Analyzed · ")+stamp;predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));queueAutomaticSignal(dir)}
+function signalWindowStatus(){
+ if($("timeframe").value!=="5m")return{open:true,text:""};
+ const phase=Date.now()%300000,untilOpen=240000-phase;
+ if(phase>=240000){const left=300000-phase;return{open:true,text:"Signal window open · next 5m candle in "+String(Math.floor(left/60000)).padStart(2,"0")+":"+String(Math.floor(left%60000/1000)).padStart(2,"0")};}
+ const sec=Math.ceil(untilOpen/1000);
+ return{open:false,text:"Signal window opens in "+String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")+" (final minute before next 5m candle)"};
+}
+function setSignal(dir,score,why){
+ const window=signalWindowStatus();
+ if(!window.open){dir="WAIT";score=0;why=window.text+". Direction will be checked again during this final minute using closed-candle data. "+why;}
+ $("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;
+ const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ $("signalUpdated").textContent=window.open?(sampleMode?"Sample only · ":"Analyzed · ")+stamp:window.text;
+ predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));
+ if(window.open)queueAutomaticSignal(dir);
+}
 function queueAutomaticSignal(dir){
  if(sampleMode||!["CALL","PUT"].includes(dir)||!Number.isFinite(currentPrice))return;
  const valid=(candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite));
