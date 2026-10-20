@@ -100,7 +100,7 @@ function updateSupportResistance(data,price){
 }
 function predictNextCandle(valid){
  const out=$("nextPrediction"),badge=$("nextPredictionScore"),meter=$("nextPredictionMeter"),reason=$("nextPredictionReason");
- const show=(dir,score,msg)=>{const signal=$("signal").textContent;const matching=(dir==="UP"&&signal==="CALL")||(dir==="DOWN"&&signal==="PUT");if(dir!=="UNCERTAIN"&&!matching){dir="UNCERTAIN";score=0;msg="Prediction does not agree with the confirmed CALL/PUT signal. Wait for both to align.";}else if(dir!=="UNCERTAIN"&&matching){msg="CONFIRMED with "+signal+" signal. "+msg;}out.textContent=dir;out.className="signalword "+(dir==="UP"?"call":dir==="DOWN"?"put":"wait");badge.textContent=score?score+"% rule score":(dir==="UNCERTAIN"?"Waiting for agreement":"Not enough data");meter.style.width=score+"%";reason.textContent=msg;};
+ const show=(dir,score,msg)=>{out.textContent=dir;out.className="signalword "+(dir==="UP"?"call":dir==="DOWN"?"put":"wait");badge.textContent=score?score+"% directional score":(dir==="UNCERTAIN"?"No clear direction":"Not enough data");meter.style.width=score+"%";reason.textContent=msg;};
  if(sampleMode){show("UNCERTAIN",0,"Sample data is illustrative only. Refresh for live closed candles before estimating the next candle.");return;}
  if(!valid||valid.length<12){show("UNCERTAIN",0,"Need at least 12 valid closed candles.");return;}
  const cs=valid.map(c=>c.close),last=valid[valid.length-1],prior=valid[valid.length-2];
@@ -126,6 +126,7 @@ function analyze(data){
  candles=data||[];
  const valid=candles.filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low);
  updateSupportResistance(valid,currentPrice);drawChart(candles);
+ predictNextCandle(valid);
  const view=valid.slice(-5);
  $("candles").innerHTML=view.map(c=>'<div class="candle '+(c.close>=c.open?'up':'down')+'">'+(c.close>=c.open?'▲':'▼')+'<br>'+fmt(c.close)+'</div>').join('')+Array(Math.max(0,5-view.length)).fill('<div class="candle">—</div>').join('');
  $("trendCheck").textContent="—";$("adxCheck").textContent="—";$("rsiCheck").textContent="—";$("volCheck").textContent="—";$("proChecklist").textContent="Checking trend, momentum, candle quality and nearby levels…";
@@ -208,7 +209,6 @@ function setSignal(dir,score,why){
  $("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;
  const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
  $("signalUpdated").textContent=window.open?(sampleMode?"Sample only · ":"Analyzed · ")+stamp:window.text;
- predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));
  if(window.open)queueAutomaticSignal(dir);
 }
 function queueAutomaticSignal(dir){
