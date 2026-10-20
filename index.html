@@ -198,11 +198,11 @@ function analyze(data){
  setSignal(dir,score,why.join("; ")+". This is a conservative rule-based filter, not a guarantee.");
 }
 function signalWindowStatus(){
+ // Keep signal analysis available throughout the selected timeframe. The 5-minute
+ // expiry timer remains separate; closed candles and confluence filters still apply.
  if($("timeframe").value!=="5m")return{open:true,text:""};
- const phase=Date.now()%300000,untilOpen=240000-phase;
- if(phase>=240000){const left=300000-phase;return{open:true,text:"Signal window open · next 5m candle in "+String(Math.floor(left/60000)).padStart(2,"0")+":"+String(Math.floor(left%60000/1000)).padStart(2,"0")};}
- const sec=Math.ceil(untilOpen/1000);
- return{open:false,text:"Signal window opens in "+String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")+" (final minute before next 5m candle)"};
+ const left=300000-(Date.now()%300000);
+ return{open:true,text:"5-minute expiry · next candle in "+String(Math.floor(left/60000)).padStart(2,"0")+":"+String(Math.floor(left%60000/1000)).padStart(2,"0")};
 }
 function setSignal(dir,score,why){
  const window=signalWindowStatus();
@@ -322,8 +322,9 @@ async function loadMarket(){
   currentPrice=null;candles=[];supportLevel=null;resistanceLevel=null;updateSupportResistance([],null);drawChart(candles);$("price").textContent="—";$("priceChange").textContent="No fresh market data";
   setConnection(false,"Feed unavailable");
   $("feedNote").textContent=source==="mt5"?"MT5 connection not ready: "+e.message+" Choose Public market feeds to try the built-in feed.":"Could not load live "+(isForex?"Forex":"crypto")+" data: "+e.message+". Tap Refresh market to retry; sample data is not live.";
-  if(source==="mt5"){$("mt5Help").textContent="Not connected: "+e.message+" A running MT5 data bridge with HTTPS/CORS access is required.";setSignal("WAIT",0,"MT5 data is not connected. No signal until valid MT5 candles are received.");}
-  if(isForex){$("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="N/A";setSignal("WAIT",0,"Live Forex candle data unavailable. No signal until fresh candles load.");}
+  if(source==="mt5")$("mt5Help").textContent="Not connected: "+e.message+" A running MT5 data bridge with HTTPS/CORS access is required.";
+  if(isForex||source==="mt5"){$("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="N/A";}
+  setSignal("WAIT",0,"Live market data is unavailable: "+e.message+". Check your internet connection and selected market feed, then tap Refresh market. No CALL/PUT signal can be calculated without fresh candles.");
  }finally{$("refresh").disabled=false;$("refresh").textContent="Refresh market";$("analyzeSignalNow").disabled=false;$("analyzeSignalNow").textContent="Refresh & analyze signal";$("nextPredictionRefresh").disabled=false;$("nextPredictionRefresh").textContent="Refresh prediction"}
 }
 function sampleData(){sampleMode=true;const base=currentPrice||65000,now=Date.now(),vals=[-.004,-.002,.001,.002,.003];candles=vals.map((d,i)=>{const o=base*(1+d),c=base*(1+d+(i%2===0?.0015:.001));return{time:now-(5-i)*300000,open:o,close:c,high:Math.max(o,c)*1.001,low:Math.min(o,c)*.999,volume:100+i*8,takerBuy:60+i*3}});currentPrice=candles[candles.length-1].close;$("price").textContent=fmt(currentPrice)+" USDT";$("priceChange").textContent="Illustrative sample data — not live";$("buyVol").textContent="63";$("sellVol").textContent="69";$("pressure").textContent="Mixed";setConnection(false,"Sample data");$("feedNote").textContent="Sample candles are illustrative and must not be treated as real market signals.";analyze(candles)}
