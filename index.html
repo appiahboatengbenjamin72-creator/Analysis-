@@ -158,8 +158,10 @@ function analyze(data){
  const momentum=last.close-closes[closes.length-4];
  const giant=baselineAtr>0&&atr>baselineAtr*1.8;
  const flat=atr>0&&Math.abs(ema9-ema21)/atr<0.12;
- const nearResistance=resistanceLevel!==null&&last.close<resistanceLevel&&(resistanceLevel-last.close)/Math.max(Math.abs(last.close),1e-12)<0.0012;
- const nearSupport=supportLevel!==null&&last.close>supportLevel&&(last.close-supportLevel)/Math.max(Math.abs(last.close),1e-12)<0.0012;
+ const nearResistance=resistanceLevel!==null&&last.close<resistanceLevel&&(resistanceLevel-last.close)/Math.max(Math.abs(last.close),1e-12)<0.0015;
+ const nearSupport=supportLevel!==null&&last.close>supportLevel&&(last.close-supportLevel)/Math.max(Math.abs(last.close),1e-12)<0.0015;
+ const bullishSupportBounce=nearSupport&&last.close>last.open&&lowerWick>=Math.max(body*0.8,range*0.18)&&last.close>=last.low+range*0.6;
+ const bearishResistanceReject=nearResistance&&last.close<last.open&&upperWick>=Math.max(body*0.8,range*0.18)&&last.close<=last.low+range*0.4;
  const bullTrend=ema9>ema21&&last.close>ema21,bearTrend=ema9<ema21&&last.close<ema21;
  $("trendCheck").textContent=flat?"Sideways":bullTrend?"Bullish":bearTrend?"Bearish":"Mixed";
  $("trendCheck").className=bullTrend?"good":bearTrend?"bad":"warn";
@@ -181,14 +183,16 @@ function analyze(data){
  if(bodyRatio<0.35)why.push("latest candle body is weak");
  if(rsi>=70&&bullTrend)why.push("RSI is overbought; avoid late CALL");
  if(rsi<=30&&bearTrend)why.push("RSI is oversold; avoid late PUT");
- if(nearResistance&&bullTrend)why.push("price is close to resistance");
- if(nearSupport&&bearTrend)why.push("price is close to support");
+ if(nearResistance)why.push("near resistance: avoid CALL unless price breaks and retests above the level");
+ if(nearSupport)why.push("near support: avoid PUT unless price breaks and retests below the level");
+ if(bullishSupportBounce)why.push("bullish rejection candle at support");
+ if(bearishResistanceReject)why.push("bearish rejection candle at resistance");
  const bullish= bullTrend&&bull>=4&&bull>bear&&macdNow>0&&momentum>0&&recentUp>=3&&bodyRatio>=0.35&&rsi>=50&&rsi<70&&trendStrong&&!nearResistance&&!giant&&!flat;
  const bearish= bearTrend&&bear>=4&&bear>bull&&macdNow<0&&momentum<0&&recentDown>=3&&bodyRatio>=0.35&&rsi<=50&&rsi>30&&trendStrong&&!nearSupport&&!giant&&!flat;
  if(bullish){dir="CALL";score=bull;why.push("trend, momentum, RSI and closed-candle confirmation align");}
  else if(bearish){dir="PUT";score=bear;why.push("trend, momentum, RSI and closed-candle confirmation align");}
  else {why.push("required filters do not fully agree; wait instead of forcing a trade");}
- $("proChecklist").textContent="Confluence checks: bullish "+bull+"/5 · bearish "+bear+"/5 · ADX "+adx.toFixed(1)+" "+(trendStrong?"(trend strength OK)":"(weak trend)")+" · "+(nearSupport?"near support · ":"")+(nearResistance?"near resistance · ":"")+(giant?"volatility spike · ":"")+(flat?"sideways conditions · ":"")+"No score is a win probability.";
+ $("proChecklist").textContent="S/R filter: "+(supportLevel!==null?"Support "+fmt(supportLevel):"support unavailable")+" · "+(resistanceLevel!==null?"Resistance "+fmt(resistanceLevel):"resistance unavailable")+" · "+(bullishSupportBounce?"bullish rejection at support":bearishResistanceReject?"bearish rejection at resistance":nearSupport?"near support — avoid PUT":nearResistance?"near resistance — avoid CALL":"price between levels")+" · Confluence: bullish "+bull+"/5, bearish "+bear+"/5 · ADX "+adx.toFixed(1)+" · No score is a win probability.";
  setSignal(dir,score,why.join("; ")+". This is a conservative rule-based filter, not a guarantee.");
 }
 function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("signalUpdated").textContent=(sampleMode?"Sample only · ":"Analyzed · ")+stamp;predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));queueAutomaticSignal(dir)}
