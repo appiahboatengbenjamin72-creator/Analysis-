@@ -27,7 +27,7 @@
 </div>
 <script>
 (function(){
-const $=id=>document.getElementById(id);let candles=[],currentPrice=null,previousPrice=null,timerEnd=0,timerInterval=null,activeEntry=null,journal=[],sampleMode=false,supportLevel=null,resistanceLevel=null;
+const $=id=>document.getElementById(id);let candles=[],currentPrice=null,previousPrice=null,timerEnd=0,timerInterval=null,activeEntry=null,journal=[],pendingAutoSignals=[],autoSignalKeys=new Set(),sampleMode=false,supportLevel=null,resistanceLevel=null;
 const fmt=n=>Number.isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:6}):"—";
 const fmtVol=n=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:3}):"—";
 function setConnection(ok,msg){$("connectionText").textContent=msg;$("connectionText").previousElementSibling&&( $("connectionText").previousElementSibling.style.background=ok?"var(--green)":"var(--amber)");}
@@ -161,7 +161,32 @@ function analyze(data){
  $("proChecklist").textContent="Confluence checks: bullish "+bull+"/5 · bearish "+bear+"/5 · ADX "+adx.toFixed(1)+" "+(trendStrong?"(trend strength OK)":"(weak trend)")+" · "+(nearSupport?"near support · ":"")+(nearResistance?"near resistance · ":"")+(giant?"volatility spike · ":"")+(flat?"sideways conditions · ":"")+"No score is a win probability.";
  setSignal(dir,score,why.join("; ")+". This is a conservative rule-based filter, not a guarantee.");
 }
-function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("signalUpdated").textContent=(sampleMode?"Sample only · ":"Analyzed · ")+stamp;predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)))}
+function setSignal(dir,score,why){$("signal").textContent=dir;$("signal").className="signalword "+dir.toLowerCase();$("confidence").textContent=dir==="WAIT"?"No setup":score+"/5 confluence";$("meterFill").style.width=(score/5*100)+"%";$("reason").textContent=why;const stamp=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("signalUpdated").textContent=(sampleMode?"Sample only · ":"Analyzed · ")+stamp;predictNextCandle((candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));queueAutomaticSignal(dir)}
+function queueAutomaticSignal(dir){
+ if(sampleMode||!["CALL","PUT"].includes(dir)||!Number.isFinite(currentPrice))return;
+ const valid=(candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite));
+ if(!valid.length)return;
+ const last=valid[valid.length-1];
+ const key=$("symbol").value+"|"+$("timeframe").value+"|"+String(last.time??last.close)+"|"+dir;
+ if(autoSignalKeys.has(key))return;
+ autoSignalKeys.add(key);
+ pendingAutoSignals.push({key,time:Date.now(),direction:dir,entry:currentPrice,exit:null,result:"PENDING",expiry:Date.now()+300000,auto:true});
+ renderJournal();
+ $("timerState").textContent="Auto-recording "+dir;
+}
+function processAutomaticSignalExpiries(){
+ if(!Number.isFinite(currentPrice)||sampleMode)return;
+ const now=Date.now();let changed=false;
+ pendingAutoSignals=pendingAutoSignals.filter(item=>{
+  if(now<item.expiry)return true;
+  item.exit=currentPrice;
+  const diff=item.exit-item.entry;
+  item.result=diff===0?"TIE":((item.direction==="CALL"&&diff>0)||(item.direction==="PUT"&&diff<0))?"WIN":"LOSS";
+  journal.push(item);changed=true;return false;
+ });
+ if(changed){renderJournal();const latest=journal[journal.length-1];$("timerState").textContent="Auto result recorded";if(latest&&$("signalAlertCountdown"))$("signalAlertCountdown").textContent="Auto-recorded "+latest.direction+" · "+latest.result;}
+}
+
 async function loadMarket(){
  sampleMode=false;
  const symbol=$("symbol").value,interval=$("timeframe").value,isForex=symbol.startsWith("FX:"),pair=isForex?symbol.slice(3):symbol;
@@ -215,7 +240,7 @@ async function loadMarket(){
  }finally{$("refresh").disabled=false}
 }
 function sampleData(){sampleMode=true;const base=currentPrice||65000,now=Date.now(),vals=[-.004,-.002,.001,.002,.003];candles=vals.map((d,i)=>{const o=base*(1+d),c=base*(1+d+(i%2===0?.0015:.001));return{time:now-(5-i)*300000,open:o,close:c,high:Math.max(o,c)*1.001,low:Math.min(o,c)*.999,volume:100+i*8,takerBuy:60+i*3}});currentPrice=candles[candles.length-1].close;$("price").textContent=fmt(currentPrice)+" USDT";$("priceChange").textContent="Illustrative sample data — not live";$("buyVol").textContent="63";$("sellVol").textContent="69";$("pressure").textContent="Mixed";setConnection(false,"Sample data");$("feedNote").textContent="Sample candles are illustrative and must not be treated as real market signals.";analyze(candles)}
-function renderJournal(){const settled=journal.filter(x=>x.result==="WIN"||x.result==="LOSS"),wins=settled.filter(x=>x.result==="WIN").length;$("totalEntries").textContent=journal.length;$("wins").textContent=wins;$("winRate").textContent=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—";$("journal").innerHTML=journal.length?journal.slice().reverse().map(x=>'<tr><td>'+new Date(x.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+'</td><td class="'+(x.direction==="CALL"?"good":"bad")+'">'+x.direction+'</td><td>'+fmt(x.entry)+'</td><td>'+fmt(x.exit)+'</td><td class="'+(x.result==="WIN"?"good":x.result==="LOSS"?"bad":"warn")+'">'+x.result+'</td></tr>').join(''):'<tr><td colspan="5" class="muted">No demo entries recorded.</td></tr>'}
+function renderJournal(){const all=[...journal,...pendingAutoSignals].sort((a,b)=>a.time-b.time);const settled=journal.filter(x=>x.result==="WIN"||x.result==="LOSS"),wins=settled.filter(x=>x.result==="WIN").length;$("totalEntries").textContent=all.length;$("wins").textContent=wins;$("winRate").textContent=settled.length?(wins/settled.length*100).toFixed(1)+"%":"—";$("journal").innerHTML=all.length?all.slice().reverse().map(x=>'<tr><td>'+new Date(x.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+'</td><td class="'+(x.direction==="CALL"?"good":x.direction==="PUT"?"bad":"warn")+'">'+x.direction+(x.auto?" · AUTO":"")+'</td><td>'+fmt(x.entry)+'</td><td>'+fmt(x.exit)+'</td><td class="'+(x.result==="WIN"?"good":x.result==="LOSS"?"bad":"warn")+'">'+x.result+'</td></tr>').join(''):'<tr><td colspan="5" class="muted">No signal records yet.</td></tr>'}
 $("applyAccountMode").addEventListener("click",()=>{const mode=$("accountMode").value;if(mode==="real"){$("brokerStatus").textContent="Real account selected. Not connected — sign in on the official Pocket Option page.";alert("Real account mode selected. No trades are sent from Trade Analyzer. Sign in only on the official Pocket Option website.");}else{$("brokerStatus").textContent="Demo practice selected in Trade Analyzer. Not connected to Pocket Option's demo account.";}});$("openPocketOption").addEventListener("click",()=>{window.open("https://pocketoption.com/","_blank","noopener,noreferrer");});
 function updateTimeframes(){
  const select=$("timeframe"),current=select.value,isForex=$("symbol").value.startsWith("FX:");
@@ -245,7 +270,7 @@ $("resetTimer").addEventListener("click",()=>{if(timerInterval)clearInterval(tim
 $("recordEntry").addEventListener("click",()=>{if(sampleMode){alert("Sample data is not live. Refresh the market before recording a manual entry.");return}if(!Number.isFinite(currentPrice)){alert("Load fresh live market data first.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
 $("settle").addEventListener("click",()=>{if(!activeEntry||!Number.isFinite(currentPrice))return;activeEntry.exit=currentPrice;const diff=currentPrice-activeEntry.entry;activeEntry.result=(activeEntry.direction==="CALL"?diff>0:diff<0)?"WIN":diff===0?"TIE":"LOSS";activeEntry=null;$("settle").disabled=true;$("timerState").textContent="Settled";renderJournal()});
 $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journal entries?")){journal=[];activeEntry=null;$("settle").disabled=true;renderJournal()}});
-let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},10000);
+let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},10000);setInterval(processAutomaticSignalExpiries,1000);
 })(); 
 </script>
 </body>
