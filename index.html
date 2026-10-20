@@ -100,7 +100,7 @@ function analyze(data){
  $("candles").innerHTML=view.map(c=>'<div class="candle '+(c.close>=c.open?'up':'down')+'">'+(c.close>=c.open?'▲':'▼')+'<br>'+fmt(c.close)+'</div>').join('')+Array(Math.max(0,5-view.length)).fill('<div class="candle">—</div>').join('');
  $("trendCheck").textContent="—";$("adxCheck").textContent="—";$("rsiCheck").textContent="—";$("volCheck").textContent="—";$("proChecklist").textContent="Checking trend, momentum, candle quality and nearby levels…";
  if(sampleMode){$("trendCheck").textContent="Sample";$("rsiCheck").textContent="—";$("volCheck").textContent="Sample";$("proChecklist").textContent="Sample data is not valid for a trade signal.";setSignal("WAIT",0,"Sample data only. Refresh live market data before using any signal.");return}
- if(valid.length<35){setSignal("WAIT",0,"Need at least 35 valid closed candles for RSI, trend strength and conservative confirmation.");return}
+ if(valid.length<30){setSignal("WAIT",0,"Need at least 30 valid closed candles for RSI, trend strength and confirmation.");return}
  const closes=valid.map(c=>c.close);
  const ema=(values,period)=>{const k=2/(period+1);let e=values[0];for(let i=1;i<values.length;i++)e=values[i]*k+e*(1-k);return e};
  const last=valid[valid.length-1],prior=valid[valid.length-2],prev2=valid[valid.length-3];
@@ -115,7 +115,7 @@ function analyze(data){
   const dxValues=[];
   for(let i=13;i<trueRanges.length;i++){const rangeSum=trueRanges.slice(i-13,i+1).reduce((a,b)=>a+b,0),p=plusDM.slice(i-13,i+1).reduce((a,b)=>a+b,0),m=minusDM.slice(i-13,i+1).reduce((a,b)=>a+b,0);const pdi=rangeSum?p/rangeSum*100:0,mdi=rangeSum?m/rangeSum*100:0;dxValues.push(pdi+mdi?Math.abs(pdi-mdi)/(pdi+mdi)*100:0);}
   const adx=dxValues.length?dxValues.slice(-14).reduce((a,b)=>a+b,0)/Math.min(14,dxValues.length):0;
-  const trendStrong=adx>=18;
+  const trendStrong=adx>=17;
  // Wilder RSI(14): seed with 14 close-to-close changes, then smooth all later changes.
  const rsiPeriod=14;let gainSum=0,lossSum=0;
  for(let i=1;i<=rsiPeriod;i++){const change=closes[i]-closes[i-1];if(change>0)gainSum+=change;else lossSum-=change;}
@@ -145,7 +145,7 @@ function analyze(data){
  if(last.close>last.open&&prior.close>prior.open&&bodyRatio>=0.35)bull++;else if(last.close<last.open&&prior.close<prior.open&&bodyRatio>=0.35)bear++;
  if(rsi>=50&&rsi<70)bull++;else if(rsi<=50&&rsi>30)bear++;
  let dir="WAIT",score=0,why=[];
- if(!trendStrong)why.push("ADX below 18: trend strength is weak; wait");
+ if(!trendStrong)why.push("ADX below 17: trend strength is weak; wait");
   if(giant)why.push("volatility spike: avoid chasing");
  if(flat)why.push("market looks sideways");
  if(bodyRatio<0.35)why.push("latest candle body is weak");
@@ -229,7 +229,7 @@ $("resetTimer").addEventListener("click",()=>{if(timerInterval)clearInterval(tim
 $("recordEntry").addEventListener("click",()=>{if(sampleMode){alert("Sample data is not live. Refresh the market before recording a manual entry.");return}if(!Number.isFinite(currentPrice)){alert("Load fresh live market data first.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
 $("settle").addEventListener("click",()=>{if(!activeEntry||!Number.isFinite(currentPrice))return;activeEntry.exit=currentPrice;const diff=currentPrice-activeEntry.entry;activeEntry.result=(activeEntry.direction==="CALL"?diff>0:diff<0)?"WIN":diff===0?"TIE":"LOSS";activeEntry=null;$("settle").disabled=true;$("timerState").textContent="Settled";renderJournal()});
 $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journal entries?")){journal=[];activeEntry=null;$("settle").disabled=true;renderJournal()}});
-let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},15000);
+let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},10000);
 })(); 
 </script>
 </body>
