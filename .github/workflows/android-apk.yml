@@ -1,0 +1,70 @@
+name: Build Trade Analyzer Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "manifest.json"
+      - "service-worker.js"
+      - "package.json"
+      - "capacitor.config.json"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install app dependencies
+        run: npm install
+
+      - name: Prepare web files
+        run: npm run prepare:mobile
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Sync web app into Android
+        run: npx cap sync android
+
+      - name: Build installable debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Publish APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trade-Analyzer-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish APK as a downloadable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-v1.0.${{ github.run_number }}"
+          gh release create "$TAG" android/app/build/outputs/apk/debug/app-debug.apk \
+            --title "Trade Analyzer Android v1.0.${{ github.run_number }}" \
+            --notes "Installable debug APK for the Trade Analyzer app. This app analyzes market data and does not place trades automatically. Only install APKs you trust."
