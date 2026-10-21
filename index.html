@@ -278,29 +278,27 @@ function analyze(data){
  if(nearSupport)why.push("near support: avoid PUT unless price breaks and retests below the level");
  if(bullishSupportBounce)why.push("bullish rejection candle at support");
  if(bearishResistanceReject)why.push("bearish rejection candle at resistance");
- // Strict three-candle confirmation: require the last three candles to be strong,
- // point in the same direction, and align with EMA trend + ADX trend strength.
- // This reduces signal frequency; it cannot guarantee a winning outcome.
- const lastThree=valid.slice(-3);
- const strongBull3=lastThree.length===3&&lastThree.every(c=>{
-  const r=Math.max(c.high-c.low,1e-12),b=c.close-c.open;
-  return b>0&&b/r>=0.55&&b>=atr*0.30;
- })&&lastThree[1].close>lastThree[0].close&&lastThree[2].close>lastThree[1].close;
- const strongBear3=lastThree.length===3&&lastThree.every(c=>{
-  const r=Math.max(c.high-c.low,1e-12),b=c.open-c.close;
-  return b>0&&b/r>=0.55&&b>=atr*0.30;
- })&&lastThree[1].close<lastThree[0].close&&lastThree[2].close<lastThree[1].close;
- const bullish=strongBull3&&bullTrend&&trendStrong&&bull>=3&&bull>bear&&macdNow>0&&momentum>0&&rsi>=45&&rsi<70&&!nearResistance&&!giant&&!flat;
- const bearish=strongBear3&&bearTrend&&trendStrong&&bear>=3&&bear>bull&&macdNow<0&&momentum<0&&rsi<=55&&rsi>30&&!nearSupport&&!giant&&!flat;
- if(bullish){dir="CALL";score=5;why.push("three strong bullish candles confirmed the EMA trend and ADX strength");}
- else if(bearish){dir="PUT";score=5;why.push("three strong bearish candles confirmed the EMA trend and ADX strength");}
+ // Trend-pullback entries: wait for a counter-trend retracement toward EMA 9/21,
+ // then require a closed confirmation candle back in the trend direction.
+ const pullbackBars=valid.slice(-5,-1);
+ const pullbackAgainstBull=pullbackBars.some(c=>c.close<c.open);
+ const pullbackAgainstBear=pullbackBars.some(c=>c.close>c.open);
+ const pullbackLow=pullbackBars.length?Math.min(...pullbackBars.map(c=>c.low)):last.low;
+ const pullbackHigh=pullbackBars.length?Math.max(...pullbackBars.map(c=>c.high)):last.high;
+ const nearBullEMA=atr>0&&(Math.abs(pullbackLow-ema9)<=atr*0.45||Math.abs(pullbackLow-ema21)<=atr*0.45||(pullbackLow<=ema9&&pullbackHigh>=ema9));
+ const nearBearEMA=atr>0&&(Math.abs(pullbackHigh-ema9)<=atr*0.45||Math.abs(pullbackHigh-ema21)<=atr*0.45||(pullbackLow<=ema9&&pullbackHigh>=ema9));
+ const bullishConfirm=last.close>last.open&&last.close>prior.high&&last.close>ema9;
+ const bearishConfirm=last.close<last.open&&last.close<prior.low&&last.close<ema9;
+ const bullishPullback=bullTrend&&trendStrong&&pullbackAgainstBull&&nearBullEMA&&bullishConfirm&&bull>=2&&bull>bear&&rsi>=45&&rsi<70&&!nearResistance&&!giant&&!flat;
+ const bearishPullback=bearTrend&&trendStrong&&pullbackAgainstBear&&nearBearEMA&&bearishConfirm&&bear>=2&&bear>bull&&rsi<=55&&rsi>30&&!nearSupport&&!giant&&!flat;
+ const pullbackStatus=bullishPullback?"Bullish pullback confirmed":bearishPullback?"Bearish pullback confirmed":bullTrend?(nearBullEMA?"Bullish trend: waiting for bullish confirmation":"Bullish trend: waiting for pullback toward EMA 9/21"):bearTrend?(nearBearEMA?"Bearish trend: waiting for bearish confirmation":"Bearish trend: waiting for pullback toward EMA 9/21"):"No clear trend; pullback setup disabled";
+ if(bullishPullback){dir="CALL";score=5;why.push("bullish EMA trend pullback reached the EMA 9/21 area and a closed bullish candle broke the previous high");}
+ else if(bearishPullback){dir="PUT";score=5;why.push("bearish EMA trend pullback reached the EMA 9/21 area and a closed bearish candle broke the previous low");}
  else {
-  const threeBull=lastThree.length===3&&lastThree.every(c=>c.close>c.open);
-  const threeBear=lastThree.length===3&&lastThree.every(c=>c.close<c.open);
-  why.push("WAIT: need three strong consecutive candles aligned with the EMA trend, ADX strength, and momentum");
-  if(threeBull||threeBear)why.push("three candles point one way, but at least one confirmation filter is missing");
+  why.push("WAIT: require a clear EMA trend, pullback toward EMA 9/21, and a closed confirmation candle");
+  if(bullTrend||bearTrend)why.push(pullbackStatus);
  }
- $("proChecklist").textContent="Three-candle rule: "+(strongBull3?"3 strong bullish candles":strongBear3?"3 strong bearish candles":"waiting for confirmed reversal pattern")+" · Trend: "+(bullTrend?"bullish":bearTrend?"bearish":"not aligned")+" · ADX "+adx.toFixed(1)+(trendStrong?" strong":" weak")+" · S/R filter: "+(supportLevel!==null?"Support "+fmt(supportLevel):"support unavailable")+" · "+(resistanceLevel!==null?"Resistance "+fmt(resistanceLevel):"resistance unavailable")+" · Confluence: bullish "+bull+"/5, bearish "+bear+"/5 · No score is a win probability.";
+ $("proChecklist").textContent="Pullback analysis: "+pullbackStatus+" · Trend: "+(bullTrend?"bullish":bearTrend?"bearish":"not aligned")+" · ADX "+adx.toFixed(1)+(trendStrong?" strong":" weak")+" · S/R filter: "+(supportLevel!==null?"Support "+fmt(supportLevel):"support unavailable")+" · "+(resistanceLevel!==null?"Resistance "+fmt(resistanceLevel):"resistance unavailable")+" · Confluence: bullish "+bull+"/5, bearish "+bear+"/5 · No score is a win probability.";
  setSignal(dir,score,why.join("; ")+". This is a conservative rule-based filter, not a guarantee.");
 }
 function signalWindowStatus(){
