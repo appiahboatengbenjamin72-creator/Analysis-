@@ -1,5 +1,5 @@
-const CACHE = "trade-analyzer-v32";
-const ASSETS = ["./", "./index.html", "./manifest.json"];
+const CACHE = "trade-analyzer-v33";
+const ASSETS = ["./", "./index.html", "./manifest.json", "./smart-review.js"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
