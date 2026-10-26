@@ -33,8 +33,8 @@ function evaluate(detail){
  const valid=(detail.candles||[]).filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low).sort((a,b)=>Number(a.time)-Number(b.time));
  const result=document.getElementById("smartReviewResult");if(!result)return;
  const put=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
- if(detail.sampleMode){result.textContent="WAIT";result.className="smart-review-result wait";put("smartReviewBadge","Sample data");put("smartReviewSummary","Sample candles are for interface testing only; no market direction is calculated.");put("smartReviewMeter","");return}
- if(valid.length<30){result.textContent="WAIT";result.className="smart-review-result wait";put("smartReviewBadge","Need 30+ closed candles");put("smartReviewSummary","Not enough valid closed candles for a stable multi-factor review.");put("smartTrend","—");put("smartRsi","—");put("smartPullback","Need more data");return}
+ if(detail.sampleMode){result.textContent="WAIT";result.className="smart-review-result wait";put("smartReviewBadge","Sample data");put("smartReviewSummary","Sample candles are for interface testing only; no market direction is calculated.");const meter=document.querySelector("#smartReviewMeter span");if(meter)meter.style.width="0%";return}
+ if(valid.length<30){result.textContent="WAIT";result.className="smart-review-result wait";put("smartReviewBadge","Need 30+ closed candles");put("smartReviewSummary","Not enough valid closed candles for a stable multi-factor review.");put("smartTrend","—");put("smartRsi","—");put("smartPullback","Need more data");const meter=document.querySelector("#smartReviewMeter span");if(meter)meter.style.width="0%";return}
  const closes=valid.map(c=>c.close),last=valid.at(-1),prev=valid.at(-2),e9=ema(closes,9),e21=ema(closes,21),rv=rsi(closes);
  const tr=valid.slice(1).map((c,i)=>Math.max(c.high-c.low,Math.abs(c.high-valid[i].close),Math.abs(c.low-valid[i].close)));
  const atr=tr.slice(-14).reduce((a,b)=>a+b,0)/14;
