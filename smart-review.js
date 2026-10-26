@@ -55,13 +55,18 @@ function evaluate(detail){
  let dir="WAIT",reasons=[];
  const votes=[tVote,rVote,mVote],call=votes.filter(v=>v==="CALL").length,putN=votes.filter(v=>v==="PUT").length;
  const overbought=rv>=70,oversold=rv<=30;
- if(call>=2&&call>putN&&bullTrend&&pullBull&&bullConfirm&&rv>=45&&rv<70&&!overbought){dir="CALL";reasons.push("Bullish trend pullback with closed-candle breakout and at least two aligned votes.");}
- else if(putN>=2&&putN>call&&bearTrend&&pullBear&&bearConfirm&&rv<=55&&rv>30&&!oversold){dir="PUT";reasons.push("Bearish trend pullback with closed-candle breakdown and at least two aligned votes.");}
+ const srTolerance=Math.max(atr*.4,Math.abs(last.close)*.00025);
+ const nearResistance=Number.isFinite(detail.resistanceLevel)&&detail.resistanceLevel>last.close&&(detail.resistanceLevel-last.close)<=srTolerance;
+ const nearSupport=Number.isFinite(detail.supportLevel)&&detail.supportLevel<last.close&&(last.close-detail.supportLevel)<=srTolerance;
+ if(call>=2&&call>putN&&bullTrend&&pullBull&&bullConfirm&&rv>=45&&rv<70&&!overbought&&!nearResistance){dir="CALL";reasons.push("Bullish trend pullback with closed-candle breakout and at least two aligned votes.");}
+ else if(putN>=2&&putN>call&&bearTrend&&pullBear&&bearConfirm&&rv<=55&&rv>30&&!oversold&&!nearSupport){dir="PUT";reasons.push("Bearish trend pullback with closed-candle breakdown and at least two aligned votes.");}
  else reasons.push("No complete setup: wait for a clear trend, pullback and closed confirmation candle.");
  if(overbought)reasons.push("RSI is overbought; avoid chasing bullish momentum.");
  if(oversold)reasons.push("RSI is oversold; avoid chasing bearish momentum.");
  if(body/range<.25)reasons.push("Latest candle body is weak.");
  if(!pullBull&&!pullBear)reasons.push("No clear EMA-area pullback is confirmed.");
+ if(nearResistance)reasons.push("Price is close to resistance; bullish entry blocked until price clears and retests it.");
+ if(nearSupport)reasons.push("Price is close to support; bearish entry blocked until price clears and retests it.");
  if(call===putN)reasons.push("Votes conflict or are balanced.");
  result.textContent=dir;result.className="smart-review-result "+dir.toLowerCase();
  put("smartReviewBadge",dir==="WAIT"?"Setup incomplete":(dir==="CALL"?"Bullish confluence":"Bearish confluence"));
@@ -70,6 +75,7 @@ function evaluate(detail){
  put("smartTrend",bullTrend?"Bullish":bearTrend?"Bearish":"Mixed");
  put("smartRsi",rv.toFixed(1)+(overbought?" · high":oversold?" · low":""));
  put("smartPullback",pullBull?(bullConfirm?"Bull confirm":"Await confirm"):pullBear?(bearConfirm?"Bear confirm":"Await confirm"):"Not confirmed");
+ put("smartReviewSummary",reasons.join(" "));
  put("smartTrendVote",tVote);put("smartReversalVote",rVote);put("smartMomentumVote",mVote);
  ["smartTrendVote","smartReversalVote","smartMomentumVote"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.color=el.textContent==="CALL"?"var(--green)":el.textContent==="PUT"?"var(--red)":"var(--amber)"});
 }
