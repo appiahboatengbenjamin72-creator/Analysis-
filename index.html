@@ -218,8 +218,8 @@ function updateBotConsensus(valid){
 function analyze(data){
  candles=data||[];
  const valid=candles.filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low);
- updateBotConsensus(valid);
  updateSupportResistance(valid,currentPrice);
+ updateBotConsensus(valid);
  window.dispatchEvent(new CustomEvent("trade-analyzer-update",{detail:{candles:valid.map(c=>({...c})),sampleMode:sampleMode,currentPrice:currentPrice,supportLevel:supportLevel,resistanceLevel:resistanceLevel,symbol:$("symbol").value,timeframe:$("timeframe").value}}));
  drawChart(candles);
  predictNextCandle(valid);
