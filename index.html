@@ -215,6 +215,7 @@ function analyze(data){
  candles=data||[];
  const valid=candles.filter(c=>c&&[c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low);
  updateBotConsensus(valid);
+ window.dispatchEvent(new CustomEvent("trade-analyzer-update",{detail:{candles:valid.map(c=>({...c})),sampleMode:sampleMode,currentPrice:currentPrice,symbol: $("symbol").value,timeframe:$("timeframe").value}}));
  updateSupportResistance(valid,currentPrice);drawChart(candles);
  predictNextCandle(valid);
  const view=valid.slice(-5);
@@ -519,6 +520,7 @@ $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journ
 let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}restoreJournal();renderJournal();renderMartingale();loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},10000);setInterval(processAutomaticSignalExpiries,1000);
 })(); 
 </script>
+<script src="./smart-review.js" defer></script>
 
 
 
