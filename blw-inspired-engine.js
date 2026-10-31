@@ -8,7 +8,7 @@ const fmt=n=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigit
 function sma(a,p){return a.length<p?NaN:a.slice(-p).reduce((s,v)=>s+v,0)/p;}
 function rsi(a,p=14){if(a.length<p+1)return NaN;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];g+=Math.max(0,d);l+=Math.max(0,-d);}return l===0?(g===0?50:100):100-100/(1+g/l);}
 function stochK(rows,end,p=14){if(end+1<p)return NaN;const a=rows.slice(end-p+1,end+1),lo=Math.min(...a.map(x=>x.low)),hi=Math.max(...a.map(x=>x.high));return hi===lo?50:100*(rows[end].close-lo)/(hi-lo);}
-function stoch(rows){const n=rows.length-1,k=stochK(rows,n,14),ks=[stochK(rows,n-2,14),stochK(rows,n-1,14),k];return {k,d:ks.every(Number.isFinite)?ks.reduce((a,b)=>a+b,0)/3:NaN};}
+function stoch(rows,endOffset=0){const n=rows.length-1-endOffset,k=stochK(rows,n,14),ks=[stochK(rows,n-2,14),stochK(rows,n-1,14),k];return {k,d:ks.every(Number.isFinite)?ks.reduce((a,b)=>a+b,0)/3:NaN};}
 function renderCard(){
  let el=$("blwStyleCard");if(el)return el;
  const anchor=$("botConsensusCard");if(!anchor)return null;
@@ -23,7 +23,7 @@ function analyze(detail){
  const vote=v=>{put("blwVote",v);const e=$("blwVote");if(e)e.className="signalword "+v.toLowerCase();};
  if(detail.sampleMode){vote("WAIT");put("blwAgreement","LIVE DATA REQUIRED");put("blwReason","Sample candles are excluded. Refresh to load live market data.");const m=$("blwMeter");if(m)m.style.width="0%";return;}
  if(rows.length<60){vote("WAIT");put("blwAgreement","Need 60+ candles");put("blwReason","Not enough candles for SMA 50 and indicator history. Load more live market data.");const m=$("blwMeter");if(m)m.style.width="0%";return;}
- const closes=rows.map(c=>c.close),last=rows[rows.length-1],prev=rows[rows.length-2],s50=sma(closes,50),s50prev=sma(closes.slice(0,-1),50),rv=rsi(closes),st=stoch(rows);
+ const closes=rows.map(c=>c.close),last=rows[rows.length-1],prev=rows[rows.length-2],s50=sma(closes,50),s50prev=sma(closes.slice(0,-1),50),rv=rsi(closes),rvPrev=rsi(closes.slice(0,-1)),st=stoch(rows),stPrev=stoch(rows,1);
  const up=last.close>s50&&s50>s50prev,down=last.close<s50&&s50<s50prev,trend=up?"UPTREND":down?"DOWNTREND":"MIXED";
  const span=Math.max(last.high-last.low,1e-12),body=Math.abs(last.close-last.open)/span;
  const bullish=last.close>last.open&&body>=.35,bearish=last.close<last.open&&body>=.35;
