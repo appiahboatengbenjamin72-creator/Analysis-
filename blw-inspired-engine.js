@@ -21,7 +21,7 @@ function analyze(detail){
  renderCard();if(!$("blwVote"))return;
  const put=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
  const vote=v=>{put("blwVote",v);const e=$("blwVote");if(e)e.className="signalword "+v.toLowerCase();};
- if(detail.sampleMode){vote("WAIT");put("blwAgreement","LIVE DATA REQUIRED");put("blwReason","Sample candles are excluded. Refresh to load live market data.");put("blwMeter").style.width="0%";return;}
+ if(detail.sampleMode){vote("WAIT");put("blwAgreement","LIVE DATA REQUIRED");put("blwReason","Sample candles are excluded. Refresh to load live market data.");const m=$("blwMeter");if(m)m.style.width="0%";return;}
  if(rows.length<60){vote("WAIT");put("blwAgreement","Need 60+ candles");put("blwReason","Not enough candles for SMA 50 and indicator history. Load more live market data.");const m=$("blwMeter");if(m)m.style.width="0%";return;}
  const closes=rows.map(c=>c.close),last=rows[rows.length-1],prev=rows[rows.length-2],s50=sma(closes,50),s50prev=sma(closes.slice(0,-1),50),rv=rsi(closes),st=stoch(rows);
  const up=last.close>s50&&s50>s50prev,down=last.close<s50&&s50<s50prev,trend=up?"UPTREND":down?"DOWNTREND":"MIXED";
