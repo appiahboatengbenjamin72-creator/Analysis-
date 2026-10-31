@@ -1,4 +1,4 @@
-const CACHE = "trade-analyzer-v37";
+const CACHE = "trade-analyzer-v38";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./smart-review.js", "./ml-engine.js", "./blw-inspired-engine.js"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
