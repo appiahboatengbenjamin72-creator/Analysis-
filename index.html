@@ -19,6 +19,50 @@
 .auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}.auth-actions button{min-height:46px}.auth-status{margin-top:14px;padding:11px 12px;border-radius:12px;background:#0b1524;border:1px solid #2c4160;color:#c3d1e5;font-size:12px;line-height:1.5;overflow-wrap:anywhere}.auth-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}.auth-link{border:0;padding:4px;background:transparent;color:#9fc0ff;font-size:12px;font-weight:650}.auth-security{font-size:11px;color:#9aacc5;line-height:1.55;margin-top:18px}.auth-user{display:flex;align-items:center;gap:8px;min-width:0}.auth-user-email{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted)}#signOutBtn{padding:9px 11px;background:#263650;color:var(--text);font-size:12px}.auth-disabled{opacity:.55;pointer-events:none}
 @media(max-width:380px){.auth-card{padding:19px;border-radius:19px}.auth-card h2{font-size:22px}.auth-actions{grid-template-columns:1fr}.auth-user-email{max-width:125px}}
 
+
+/* Compact BLW-inspired signal-first display */
+:root{color-scheme:dark;--bg:#09070e;--panel:#15101c;--panel2:#21152b;--line:#392444;--text:#f7f0fc;--muted:#b8a9c3;--green:#43dfa5;--red:#ff4d73;--amber:#ffc76d;--blue:#b65aff;--purple:#a83de0}
+body{background:radial-gradient(ellipse at top,#24102f 0,#09070e 54%);font-size:14px}
+.wrap{max-width:620px;padding:12px 12px 28px}
+.top{margin-bottom:12px;padding:3px 2px 12px;border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#bd50ef,#6925a1);color:white}
+.brand h1{font-size:18px;letter-spacing:.2px}
+.sub{font-size:11px}
+.grid{display:flex;flex-direction:column;gap:10px}
+.card{padding:13px;background:linear-gradient(155deg,#19111f,#100c16);border-color:#382443;border-radius:17px;box-shadow:0 8px 22px #0004}
+.card h2{font-size:13px;letter-spacing:.2px}
+.compact-controls{order:2;padding:12px}
+.compact-controls .controls{gap:8px}
+.compact-controls .field select{padding:10px 9px;background:#0d0912;border-color:#4a3056}
+.compact-controls .price{font-size:21px}
+.compact-controls .btnrow{margin-top:9px}
+.compact-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.compact-eyebrow{font-size:10px;font-weight:850;letter-spacing:1.2px;color:#c47be9}
+.compact-price-line{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.compact-controls .btn-blue{background:#9636c6;color:#fff}
+button{border-radius:10px}
+.signal-card{order:1;padding:16px;border-color:#55305f;background:linear-gradient(155deg,#211327,#120c18)}
+.signal-card .signal-heading h2{font-size:13px;letter-spacing:.5px;text-transform:uppercase}
+.signal-card .signalword{font-size:38px;letter-spacing:1.5px;line-height:1.1}
+.signal-card .signalbadge{background:#0c0911;border-color:#4a3056}
+.signal-card .meter{height:6px;background:#302039}
+.signal-card .meter span{background:linear-gradient(90deg,#ff4d73,#b64cff,#43dfa5)}
+.signal-card .candleline{margin:10px 0}
+.signal-card .candle{background:#100b15;border-color:#3b2945}
+.signal-card .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.signal-card .stat{background:#100b15;border-color:#3b2945;padding:9px}
+.signal-card .stat b{font-size:13px!important}
+.signal-card .notice{background:#100b15;border-color:#3b2945}
+.chart-card{order:3}
+.chart-card #cryptoChartWrap{height:245px!important}
+.chart-card h2{margin-bottom:8px}
+.more-tools-card{padding:10px 12px;text-align:center;background:#120c18}
+.more-tools-card button{width:100%;background:#2a1935;color:#e9c9fa;border:1px solid #553466;padding:11px}
+.extra-tool{display:none}
+.grid.show-advanced .extra-tool{display:block}
+#marketChart{touch-action:pan-y}
+@media(max-width:420px){.wrap{padding:9px 9px 24px}.signal-card .signalword{font-size:34px}.top{gap:8px}.brand h1{font-size:17px}.compact-controls .controls{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body>
@@ -40,6 +84,39 @@
 <script>
 (function(){
 const $=id=>document.getElementById(id);let candles=[],currentPrice=null,previousPrice=null,timerEnd=0,timerInterval=null,activeEntry=null,journal=[],pendingAutoSignals=[],autoSignalKeys=new Set(),sampleMode=false,supportLevel=null,resistanceLevel=null,martingaleStage=0;
+
+/* Build a simple signal-first screen; all existing tools remain available under More tools. */
+const mainGrid=document.querySelector(".grid");
+const signalCard=$("signal")?.closest(".signal-card");
+const marketCard=$("symbol")?.parentElement?.parentElement?.parentElement;
+const chartCard=$("marketChart")?.closest("section.card");
+if(mainGrid&&signalCard&&marketCard&&chartCard){
+  signalCard.classList.add("signal-card");
+  chartCard.classList.add("chart-card");
+  mainGrid.insertBefore(signalCard,mainGrid.firstElementChild);
+  const compact=document.createElement("section");
+  compact.className="card wide compact-controls";
+  compact.innerHTML='<div class="compact-head"><span class="compact-eyebrow">MARKET SETUP</span><span class="pill">Analysis only</span></div>';
+  const pairControls=$("symbol").parentElement.parentElement;
+  const priceBlock=$("price").parentElement;
+  const refreshRow=$("refresh").parentElement;
+  compact.append(pairControls,priceBlock,refreshRow);
+  mainGrid.insertBefore(compact,signalCard.nextElementSibling);
+  mainGrid.insertBefore(chartCard,compact.nextElementSibling);
+  const more=document.createElement("section");
+  more.className="card wide more-tools-card";
+  more.innerHTML='<button type="button" id="toggleAdvancedTools" aria-expanded="false">＋ Show more tools</button><div class="small muted" style="margin-top:6px">Support/resistance, extra bots, expiry timer, journal and feed settings</div>';
+  mainGrid.insertBefore(more,chartCard.nextElementSibling);
+  Array.from(mainGrid.children).forEach(el=>{
+    if(![signalCard,compact,chartCard,more].includes(el))el.classList.add("extra-tool");
+  });
+  $("toggleAdvancedTools").addEventListener("click",()=>{
+    const open=mainGrid.classList.toggle("show-advanced");
+    $("toggleAdvancedTools").textContent=open?"− Hide extra tools":"＋ Show more tools";
+    $("toggleAdvancedTools").setAttribute("aria-expanded",String(open));
+  });
+}
+
 const fmt=n=>Number.isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:6}):"—";
 const fmtVol=n=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:3}):"—";
 function setConnection(ok,msg){$("connectionText").textContent=msg;$("connectionText").previousElementSibling&&( $("connectionText").previousElementSibling.style.background=ok?"var(--green)":"var(--amber)");}
