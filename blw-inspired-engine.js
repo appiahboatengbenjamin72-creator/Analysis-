@@ -34,8 +34,8 @@ function analyze(detail){
  const m1Last=m1[m1.length-1],m1Prev=m1[m1.length-2];
  const m1Bull=m1.length>=3&&m1Last.close>m1Last.open&&m1Last.close>m1Prev.close&&m1Last.close>m1Prev.open;
  const m1Bear=m1.length>=3&&m1Last.close<m1Last.open&&m1Last.close<m1Prev.close&&m1Last.close<m1Prev.open;
- const m1Ready=m1.length>=3;
- const m1Label=!m1Ready?(detail.m1Status||"M1 unavailable"):(m1Bull?"CALL confirmed":m1Bear?"PUT confirmed":"No direction");
+ const m1Ready=m1.length>=3&&Number.isFinite(m1Last.time)&&m1Last.time<=Date.now()+5000&&Date.now()-m1Last.time<=120000;
+ const m1Label=!m1Ready?(m1.length>=3?"M1 data stale — WAIT":(detail.m1Status||"M1 unavailable")):(m1Bull?"CALL confirmed":m1Bear?"PUT confirmed":"No direction");
  put("blwM1Status",m1Label);
  const support=Number(detail.supportLevel),resistance=Number(detail.resistanceLevel);
  const nearSupport=Number.isFinite(support)&&support>0&&Math.abs(last.close-support)<=Math.max(atr*.65,Math.abs(last.close)*.0001);
