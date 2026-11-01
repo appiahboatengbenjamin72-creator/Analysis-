@@ -464,7 +464,10 @@ async function loadM1Confirmation(){
  }catch(err){m1Candles=[];m1Status="M1 unavailable: "+err.message;}
 }
 
+let marketLoadInProgress=false;
 async function loadMarket(){
+ if(marketLoadInProgress)return;
+ marketLoadInProgress=true;
  sampleMode=false;m1Candles=[];m1Status="Loading separate M1 candles…";
  const symbol=$("symbol").value,interval=$("timeframe").value,isForex=symbol.startsWith("FX:"),isOTC=symbol.endsWith("_otc"),pair=isForex?symbol.slice(3):symbol,source=$("dataSource").value;
  $("otcEndpointField").style.display=source==="otc"?"block":"none";
@@ -579,7 +582,7 @@ async function loadMarket(){
   if(source==="otc")$("otcHelp").textContent="Not connected: "+e.message+" The proxy must call OTCharts server-side and return candles JSON.";
   if(isForex||source==="mt5"||source==="otc"){$("buyVol").textContent="N/A";$("sellVol").textContent="N/A";$("pressure").textContent="N/A";}
   setSignal("WAIT",0,"Live market data is unavailable: "+e.message+". Check your internet connection and selected market feed, then tap Refresh market. No CALL/PUT signal can be calculated without fresh candles.");
- }finally{$("refresh").disabled=false;$("refresh").textContent="Refresh market";$("analyzeSignalNow").disabled=false;$("analyzeSignalNow").textContent="Refresh & analyze signal";$("nextPredictionRefresh").disabled=false;$("nextPredictionRefresh").textContent="Refresh prediction"}
+ }finally{marketLoadInProgress=false;$("refresh").disabled=false;$("refresh").textContent="Refresh market";$("analyzeSignalNow").disabled=false;$("analyzeSignalNow").textContent="Refresh & analyze signal";$("nextPredictionRefresh").disabled=false;$("nextPredictionRefresh").textContent="Refresh prediction"}
 }
 function sampleData(){sampleMode=true;const base=currentPrice||65000,now=Date.now(),vals=[-.004,-.002,.001,.002,.003];candles=vals.map((d,i)=>{const o=base*(1+d),c=base*(1+d+(i%2===0?.0015:.001));return{time:now-(5-i)*300000,open:o,close:c,high:Math.max(o,c)*1.001,low:Math.min(o,c)*.999,volume:100+i*8,takerBuy:60+i*3}});currentPrice=candles[candles.length-1].close;$("price").textContent=fmt(currentPrice)+" USDT";$("priceChange").textContent="Illustrative sample data — not live";$("buyVol").textContent="63";$("sellVol").textContent="69";$("pressure").textContent="Mixed";setConnection(false,"Sample data");$("feedNote").textContent="Sample candles are illustrative and must not be treated as real market signals.";analyze(candles)}
 function saveJournal(){try{localStorage.setItem("tradeAnalyzerJournalV1",JSON.stringify({version:1,savedAt:Date.now(),journal,pendingAutoSignals,martingaleStage}));}catch(_){$("timerState").textContent="Could not save data on this device";}}
@@ -645,7 +648,7 @@ $("resetMartingale").addEventListener("click",()=>{martingaleStage=0;renderJourn
 $("recordEntry").addEventListener("click",()=>{if(sampleMode){alert("Sample data is not live. Refresh the market before recording a manual entry.");return}if(!Number.isFinite(currentPrice)){alert("Load fresh live market data first.");return}const input=parseFloat($("entryPrice").value);activeEntry={time:Date.now(),direction:$("entrySignal").value,entry:Number.isFinite(input)&&input>0?input:currentPrice,exit:null,result:"OPEN"};journal.push(activeEntry);renderJournal();$("settle").disabled=true;$("timerState").textContent="Entry recorded";});
 $("settle").addEventListener("click",()=>{if(!activeEntry||!Number.isFinite(currentPrice))return;activeEntry.exit=currentPrice;const diff=currentPrice-activeEntry.entry;activeEntry.result=(activeEntry.direction==="CALL"?diff>0:diff<0)?"WIN":diff===0?"TIE":"LOSS";activeEntry=null;$("settle").disabled=true;$("timerState").textContent="Settled";renderJournal()});
 $("clearJournal").addEventListener("click",()=>{if(confirm("Clear all demo journal entries?")){journal=[];activeEntry=null;$("settle").disabled=true;renderJournal()}});
-let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}restoreJournal();renderJournal();renderMartingale();loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},10000);setInterval(processAutomaticSignalExpiries,1000);
+let chartResizeTimer=null;window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>drawChart(candles),120)});window.addEventListener("orientationchange",()=>setTimeout(()=>drawChart(candles),180));window.addEventListener("online",loadMarket);if("serviceWorker"in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("./service-worker.js").catch(()=>{})}restoreJournal();renderJournal();renderMartingale();loadMarket();setInterval(()=>{if(!sampleMode&&document.visibilityState==="visible")loadMarket()},5000);setInterval(processAutomaticSignalExpiries,1000);
 })(); 
 </script>
 <script src="./ml-engine.js" defer></script>
