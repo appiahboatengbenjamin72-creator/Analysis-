@@ -63,6 +63,95 @@ button{border-radius:10px}
 #marketChart{touch-action:pan-y}
 @media(max-width:420px){.wrap{padding:9px 9px 24px}.signal-card .signalword{font-size:34px}.top{gap:8px}.brand h1{font-size:17px}.compact-controls .controls{grid-template-columns:1fr 1fr}}
 
+
+/* Trade Analyzer — professional trading-terminal surface refresh */
+:root{
+ --bg:#070d18;--panel:#101a2b;--panel2:#15233a;--line:#263a56;
+ --text:#edf4ff;--muted:#91a5c2;--green:#28d99a;--red:#ff5d73;
+ --amber:#f5bf58;--blue:#69a9ff;--purple:#9c75ff;
+}
+html{background:#070d18}
+body{background:
+ radial-gradient(ellipse at 12% -8%,rgba(37,91,151,.22),transparent 42%),
+ radial-gradient(ellipse at 88% 0%,rgba(91,54,160,.16),transparent 35%),
+ #070d18;color:var(--text);font-size:14px}
+.wrap{width:min(100% - 28px,1440px);max-width:1440px;margin:0 auto;padding:22px 0 42px}
+.top{position:relative;margin:0 0 18px;padding:4px 2px 16px;border-bottom:1px solid #263a56}
+.logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#52e2b2,#4c8eff);box-shadow:0 8px 24px #3b9dca35;color:#06111e}
+.brand h1{font-size:21px;letter-spacing:-.45px}
+.sub{font-size:11px;letter-spacing:.25px;color:#91a5c2}
+.pill{background:#101a2b;border-color:#314762;padding:7px 11px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start}
+.grid>.card{grid-column:span 12;min-width:0;padding:17px;background:linear-gradient(155deg,rgba(17,29,48,.98),rgba(11,20,35,.98));border:1px solid #263a56;border-radius:17px;box-shadow:0 12px 30px #0003}
+.grid>.card h2{font-size:13px;letter-spacing:.45px;text-transform:uppercase;color:#d8e6fa;margin:0 0 13px}
+.grid>.card:nth-child(1){grid-column:span 12;order:10}
+.grid>.card:nth-child(2){grid-column:span 4;order:1}
+.grid>.card:nth-child(3){grid-column:span 8;order:2}
+.grid>.card:nth-child(4){grid-column:span 6;order:4}
+.grid>.card:nth-child(5){grid-column:span 6;order:3}
+.grid>.card:nth-child(6){grid-column:span 12;order:5}
+.grid>.card:nth-child(7){grid-column:span 6;order:8}
+.grid>.card:nth-child(8){grid-column:span 6;order:11}
+.grid>.card:nth-child(9){grid-column:span 4;order:6}
+.grid>.card:nth-child(10){grid-column:span 8;order:9}
+.grid>.card:nth-child(11){grid-column:span 4;order:7}
+.grid>.card:nth-child(12){grid-column:span 12;order:12}
+.field label{font-size:11px;font-weight:700;letter-spacing:.25px;color:#9fb2cc}
+.field select,.field input{background:#091321;border:1px solid #2c415e;border-radius:10px;color:#edf4ff;min-height:42px}
+button{border-radius:10px;background:linear-gradient(135deg,#37d9a0,#23b985);box-shadow:0 5px 16px #1bbd8830}
+.btn-secondary{background:#1b2b43;color:#dceaff;border:1px solid #304764;box-shadow:none}
+.btn-blue{background:linear-gradient(135deg,#568fff,#7568ef);color:white}
+.card .notice,.stat,.candle{background:#091321;border-color:#263b58}
+.price{font-size:27px;letter-spacing:-.8px}
+.chart-card{min-width:0}
+.chart-card #cryptoChartWrap{height:390px!important;min-height:280px}
+#marketChart{width:100%;height:100%;border-radius:12px}
+.signal-card{background:linear-gradient(150deg,#17283b,#101a2b)!important;border-color:#34516d!important}
+.signal-card .signalword{font-size:42px;letter-spacing:1px}
+.signal-card .meter{height:7px;background:#263a56}
+.signal-card .meter span{background:linear-gradient(90deg,#ff5d73,#f5bf58,#28d99a)}
+.signal-card .stat{background:#0a1422;border-color:#2b405c}
+.signal-card .signalbadge{background:#0a1422;border-color:#304762}
+.signal-card .candle{background:#0a1422;border-color:#2b405c}
+#botConsensusCard{background:linear-gradient(150deg,#131f32,#0c1728)!important}
+#botConsensusCard .stat,#botConsensusCard .notice{background:#091321}
+.countdown{font-size:34px;color:#edf4ff}
+.progress{background:#263a56}
+.progress div{background:linear-gradient(90deg,#5d9cff,#9a7cff)}
+.tablewrap{border:1px solid #263a56;border-radius:12px}
+table th{background:#111f33}
+.footer{color:#7f93af}
+@media(max-width:760px){
+ .wrap{width:100%;padding:12px 10px 28px}
+ .top{margin-bottom:12px;padding-bottom:12px}
+ .brand h1{font-size:18px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .grid>.card{padding:13px;border-radius:14px}
+ .grid>.card:nth-child(n){grid-column:span 2}
+ .grid>.card:nth-child(2){order:1}
+ .grid>.card:nth-child(3){order:2}
+ .grid>.card:nth-child(5){order:3}
+ .grid>.card:nth-child(4){order:4}
+ .grid>.card:nth-child(6){order:5}
+ .grid>.card:nth-child(9){order:6}
+ .grid>.card:nth-child(11){order:7}
+ .grid>.card:nth-child(7){order:8}
+ .grid>.card:nth-child(10){order:9}
+ .grid>.card:nth-child(1){order:10}
+ .grid>.card:nth-child(8){order:11}
+ .chart-card #cryptoChartWrap{height:300px!important;min-height:250px}
+ .signal-card .signalword{font-size:36px}
+}
+@media(max-width:390px){
+ .wrap{padding-left:8px;padding-right:8px}
+ .grid{gap:8px}
+ .grid>.card{padding:11px}
+ .chart-card #cryptoChartWrap{height:255px!important}
+ .brand h1{font-size:16px}
+ .sub{font-size:10px}
+ .pill{font-size:10px;padding:5px 7px}
+}
+
 </style>
 </head>
 <body>
