@@ -3,6 +3,8 @@
   const STORE="tradeAnalyzerExternalSignalsV1";
   const providers=[
     {id:"sweetex",name:"Sweetex AI",url:"https://sweetex-ai.com/binary",fit:"Binary signals · 1m–1h",note:"Public signal page; no verified public import API."},
+    {id:"binaryai",name:"Binary AI",url:"",fit:"Binary signal assistant",note:"Generic provider name. Exact official website is needed before linking."},
+    {id:"pocketsignals",name:"Pocket Option Signals",url:"",fit:"Pocket Option signal provider",note:"Provider identity is not specific enough yet. Exact official website or Telegram handle is needed."},
     {id:"optencis",name:"Optencis",url:"https://optencis.com/signals/",fit:"Pocket Option · 1–60m",note:"Member/Telegram access may apply. Its terms describe optional martingale packs; avoid those if you do not want martingale."},
     {id:"signalbots",name:"SignalBots.AI",url:"https://signalbots.ai/signals/binary",fit:"Binary signals · 1m/5m",note:"Dashboard and Telegram signals; no verified public import API."},
     {id:"sam",name:"SAM Trading",url:"https://samtrading.space/",fit:"Pocket Option · CALL/PUT",note:"Offers a limited free analysis trial; no verified public import API."},
@@ -52,7 +54,7 @@
       @media(max-width:420px){#externalAssistantsCard .ext-entry .controls{grid-template-columns:1fr 1fr}}
     `;
     document.head.appendChild(style);
-    document.getElementById("externalProviderList").innerHTML=providers.map(p=>`<article class="ext-provider"><strong>${esc(p.name)}</strong><div class="ext-fit">${esc(p.fit)}</div><p>${esc(p.note)}</p><a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open official source ↗</a><div class="ext-status">NOT CONNECTED · manual review</div></article>`).join("");
+    document.getElementById("externalProviderList").innerHTML=providers.map(p=>`<article class="ext-provider"><strong>${esc(p.name)}</strong><div class="ext-fit">${esc(p.fit)}</div><p>${esc(p.note)}</p>${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open official source ↗</a>`:`<span class="ext-fit">Official link needed</span>`}<div class="ext-status">NOT CONNECTED · manual review</div></article>`).join("");
     document.getElementById("extProvider").innerHTML=providers.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
     document.getElementById("saveExternalSignal").addEventListener("click",()=>{
       const provider=providers.find(p=>p.id===document.getElementById("extProvider").value);
