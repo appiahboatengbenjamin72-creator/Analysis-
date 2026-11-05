@@ -62,27 +62,10 @@
     document.getElementById("extProvider").innerHTML=providers.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
     document.getElementById("saveExternalSignal").addEventListener("click",()=>{
       const provider=providers.find(p=>p.id===document.getElementById("extProvider").value);
-      const pair=document.getElementById("extPair").value.trim().toUpperCase();
-      const timeframe=document.getElementById("extTimeframe").value;
-      const direction=document.getElementById("extDirection").value;
-      if(!provider||!pair){document.getElementById("extSaveStatus").textContent="Choose a provider and enter a pair or asset.";return;}
-      const rows=read();rows.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),provider:provider.name,pair,timeframe,direction,time:Date.now()});write(rows);render();
-      document.getElementById("extSaveStatus").textContent="Saved "+direction+" from "+provider.name+" for "+pair+" ("+timeframe+"). This is a manual record, not an imported feed.";
-    });
-    document.getElementById("clearExternalSignals").addEventListener("click",()=>{
-      if(!confirm("Clear all manually recorded external provider signals on this device?"))return;
-      write([]);render();document.getElementById("extSaveStatus").textContent="External signal history cleared on this device.";
-    });
-    render();
-  }
-  function render(){
-    const rows=read().sort((a,b)=>b.time-a.time);
-    const body=document.getElementById("externalSignalRows");
-    if(!body)return;
-    body.innerHTML=rows.length?rows.slice(0,30).map(x=>`<tr><td>${new Date(x.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</td><td>${esc(x.provider)}</td><td>${esc(x.pair)}</td><td>${esc(x.timeframe)}</td><td class="${x.direction==="CALL"?"good":x.direction==="PUT"?"bad":"warn"}">${esc(x.direction)}</td></tr>`).join(""):'<tr><td colspan="5" class="muted">No provider signals recorded yet.</td></tr>';
-    const pair=(document.getElementById("symbol")?.selectedOptions?.[0]?.textContent||"EUR / USD").replace(/\s*\/\s*/g,"/").replace(/\s+/g,"").toUpperCase();
+      const normalizePair = value => String(value||"").replace(/\s+/g,"").replace(/\//g,"").toUpperCase();
+    const pair=normalizePair(document.getElementById("symbol")?.selectedOptions?.[0]?.textContent||"EUR / USD");
     const tf=document.getElementById("timeframe")?.value||"5m";
-    const recent=rows.filter(x=>x.time>Date.now()-15*60*1000&&x.timeframe===tf&&x.pair.replace(/\s+/g,"").replace(/\s*\/\s*/g,"/")===pair);
+    const recent=rows.filter(x=>x.time>Date.now()-15*60*1000&&x.timeframe===tf&&normalizePair(x.pair)===pair);
     const calls=recent.filter(x=>x.direction==="CALL").length,puts=recent.filter(x=>x.direction==="PUT").length;
     const agreement=document.getElementById("extAgreement"),detail=document.getElementById("extAgreementDetail");
     if(agreement){agreement.textContent=recent.length?calls+" CALL · "+puts+" PUT":"No recent signals";}
